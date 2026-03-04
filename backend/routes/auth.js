@@ -5,11 +5,24 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 
-const DATA_PATH = path.join(__dirname, '..', 'data', 'members.json');
+// On Vercel, only /tmp is writable
+const DATA_DIR = process.env.VERCEL
+    ? path.join('/tmp', 'data')
+    : path.join(__dirname, '..', 'data');
+const DATA_PATH = path.join(DATA_DIR, 'members.json');
 const JWT_SECRET = process.env.JWT_SECRET || 'clan_secret_key_2026';
 
 // Helper to read/write members
-const getMembers = () => JSON.parse(fs.readFileSync(DATA_PATH));
+const getMembers = () => {
+    // Ensure data dir/file exists (serverless cold start safety)
+    if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(DATA_PATH)) {
+        fs.writeFileSync(DATA_PATH, JSON.stringify([]));
+    }
+    return JSON.parse(fs.readFileSync(DATA_PATH));
+};
 const saveMembers = (members) => fs.writeFileSync(DATA_PATH, JSON.stringify(members, null, 2));
 
 // @route   POST /api/auth/register

@@ -18,12 +18,21 @@ app.use(helmet({
 app.use(express.json());
 
 // Simple persistence: JSON file
-const DATA_PATH = path.join(__dirname, 'data', 'members.json');
-if (!fs.existsSync(path.join(__dirname, 'data'))) {
-    fs.mkdirSync(path.join(__dirname, 'data'));
-}
-if (!fs.existsSync(DATA_PATH)) {
-    fs.writeFileSync(DATA_PATH, JSON.stringify([]));
+// On Vercel, only /tmp is writable
+const DATA_DIR = process.env.VERCEL
+    ? path.join('/tmp', 'data')
+    : path.join(__dirname, 'data');
+const DATA_PATH = path.join(DATA_DIR, 'members.json');
+
+try {
+    if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(DATA_PATH)) {
+        fs.writeFileSync(DATA_PATH, JSON.stringify([]));
+    }
+} catch (err) {
+    console.error('Data directory init error:', err.message);
 }
 
 // Routes
